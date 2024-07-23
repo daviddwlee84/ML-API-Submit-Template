@@ -1,0 +1,8 @@
+torch
+gputil
+filelock
+tap
+fastapi
+uvicorn
+mlflow
+streamlit
