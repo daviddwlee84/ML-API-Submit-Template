@@ -1,7 +1,7 @@
 torch
 gputil
 filelock
-tap
+typed-argument-parser
 fastapi
 uvicorn
 mlflow
