@@ -72,7 +72,7 @@ class DummyContextManager:
         return False  # Make this object a False means "no lock"
 
 
-def train_model(str, task: Union[TrainTask, TrainArgs], run_id: Optional[str] = None):
+def train_model(task: Union[TrainTask, TrainArgs], run_id: Optional[str] = None):
     try:
         args = task
 
@@ -119,7 +119,6 @@ def train_model(str, task: Union[TrainTask, TrainArgs], run_id: Optional[str] = 
                     # Log parameters
                     mlflow.log_param("learning_rate", args.learning_rate)
                     mlflow.log_param("epochs", args.epochs)
-                    mlflow.log_param("device", device)
 
                     # Dummy data
                     data = torch.randn(100, 10).to(device)
