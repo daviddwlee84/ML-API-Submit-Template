@@ -5,9 +5,10 @@ import mlflow.tracking.fluent
 from train import TrainTask, train_model, TrainArgs
 import config
 import utils
+from loguru import logger
 
 PARALLEL_NUM = utils.get_parallel_num()
-print(f"Parallel Number: {PARALLEL_NUM}")
+logger.info(f"Parallel Number: {PARALLEL_NUM}")
 
 app = FastAPI()
 # NOTE: somehow start same parameter tasks: using Process will get same result (loss) while using Thread + nested will get different result (loss)

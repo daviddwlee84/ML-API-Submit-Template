@@ -5,6 +5,7 @@ import time
 import GPUtil
 from filelock import FileLock
 import torch
+from loguru import logger
 
 
 def create_lock_dir() -> None:
@@ -32,7 +33,7 @@ def get_available_gpu() -> Tuple[int, FileLock]:
             except:
                 continue
 
-        print("No available GPUs. Waiting...")
+        logger.info("No available GPUs. Waiting...")
         time.sleep(config.WAIT_TIME)
 
 
@@ -60,7 +61,7 @@ def get_device_and_lock(
             try:
                 lock.acquire(timeout=0)
             except:
-                print(f"GPU {gpu_id} is currently occupied. Waiting...")
+                logger.info(f"GPU {gpu_id} is currently occupied. Waiting...")
                 while True:
                     try:
                         lock.acquire(timeout=0)

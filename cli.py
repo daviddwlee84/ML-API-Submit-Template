@@ -3,6 +3,7 @@ from train import TrainArgs, train_model
 import mlflow
 import mlflow.pytorch
 from tap import Tap
+from loguru import logger
 
 
 class ResumeArgs(Tap):
@@ -12,9 +13,9 @@ class ResumeArgs(Tap):
 
 if __name__ == "__main__":
 
-    print("Tracking URI:", mlflow.get_tracking_uri())
+    logger.info(f"Tracking URI: {mlflow.get_tracking_uri()}")
     # The artifact URI is associated with an active run, so you need to start a run first
-    # print("Artifact URI:", mlflow.get_artifact_uri())
+    # logger.info(f"Artifact URI: {mlflow.get_artifact_uri()}")
 
     resume_args = ResumeArgs().parse_args(known_only=True)
 
@@ -37,7 +38,7 @@ if __name__ == "__main__":
             ):
                 if resume_args.raise_error_if_checkpoint_not_found:
                     raise f"Not found checkpoint to resume: {run.info.artifact_uri}/checkpoint/latest"
-                print(
+                logger.warning(
                     f"No checkpoint found for run {run.info.run_id}. Will train from scratch."
                 )
             else:
@@ -49,10 +50,10 @@ if __name__ == "__main__":
             pass
 
     if resume_state_dict:
-        print(f"Resuming {resume_args.resume_run_id}")
+        logger.info(f"Resuming {resume_args.resume_run_id}")
         # NOTE: currently if we resume a run, we don't modify/override the arguments
         args.run_name = None
     else:
-        print("Training New Run")
+        logger.info("Training New Run")
         args = TrainArgs().parse_args(known_only=True)
     train_model(args, run_id=run_id, resume_state_dict=resume_state_dict)
