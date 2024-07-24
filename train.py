@@ -8,6 +8,7 @@ from pydantic import BaseModel
 import mlflow
 import mlflow.pytorch
 from tap import Tap
+import config
 
 # Constants
 LOCK_DIR = os.path.expanduser("~/.gpu_locks")
@@ -49,6 +50,7 @@ class TrainTask(BaseModel):
     epochs: int = 10  # Number of epochs to train
     gpu_id: int = -1  # GPU ID to use, -1 for automatic allocation
     run_name: Optional[str] = None  # Optional run name for MLFlow
+    exp_name: Optional[str] = None  # Optional experiment name for MLFlow
 
 
 class TrainArgs(Tap):
@@ -56,6 +58,7 @@ class TrainArgs(Tap):
     epochs: int = 10  # Number of epochs to train
     gpu_id: int = -1  # GPU ID to use, -1 for automatic allocation
     run_name: str = None  # Optional name for the MLFlow run
+    exp_name: Optional[str] = None  # Optional experiment name for MLFlow
 
 
 def get_args_from_model(param: TrainTask) -> TrainArgs:
@@ -110,6 +113,8 @@ def train_model(task: Union[TrainTask, TrainArgs], run_id: Optional[str] = None)
                     tags={
                         "Device": str(device),
                     },
+                    # Currently set nested can by pass MLFlow multi-thread
+                    nested=config.USE_THREAD,
                 ):
                     # Example model and training loop
                     model = torch.nn.Linear(10, 1).to(device)

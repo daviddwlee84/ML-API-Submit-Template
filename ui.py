@@ -14,6 +14,7 @@ st.title("MLFlow Training Task Manager")
 # Training parameters input form
 st.header("Submit a Training Task")
 run_name = st.text_input("Run Name", value="", help="optional")
+exp_name = st.text_input("Experiment Name", value="", help="optional")
 learning_rate = st.number_input(
     "Learning Rate", min_value=0.0001, max_value=1.0, value=0.01, step=0.001
 )
@@ -31,6 +32,7 @@ if st.button("Submit Training Task"):
         "epochs": epochs,
         "gpu_id": gpu_id,
         "run_name": run_name if run_name else None,
+        "exp_name": exp_name if exp_name else None,
     }
 
     # Send POST request to submit the training task
