@@ -6,6 +6,7 @@ import os
 from filelock import FileLock
 from pydantic import BaseModel
 import mlflow
+import mlflow.pytorch
 from tap import Tap
 
 # Constants
@@ -135,6 +136,16 @@ def train_model(task: Union[TrainTask, TrainArgs], run_id: Optional[str] = None)
 
                         # Log metrics
                         mlflow.log_metric("loss", loss.item(), step=epoch)
+                        mlflow.pytorch.log_state_dict(
+                            {
+                                "epoch": epoch,
+                                "model_state_dict": model.state_dict(),
+                                "optimizer_state_dict": optimizer.state_dict(),
+                            },
+                            # NOTE: this path is a "folder name"
+                            f"checkpoint/state_dict_epoch_{epoch}",
+                        )
+                    mlflow.pytorch.log_model(model, f"model/latest_model")
             except Exception as e:
                 print(f"An error occurred: {e}")
                 mlflow.log_param("error", str(e))

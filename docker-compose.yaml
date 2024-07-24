@@ -60,7 +60,6 @@ services:
       else
         echo 'bucket already exists'
       fi
-      exit 0;
       "
     networks:
       - internal

@@ -56,7 +56,17 @@ But according to experience, if MLFlow runs without database and if we have tons
 ```bash
 docker compose --env-file mlflow_config.env down
 docker compose --env-file mlflow_config.env up -d --build
-
-export MLFLOW_TRACKING_URI=http://localhost:5000  # Replace with remote host name or IP address in an actual environment
-export MLFLOW_S3_ENDPOINT_URL=http://localhost:9000
 ```
+
+```bash
+# Will use local artifact
+MLFLOW_TRACKING_URI=http://localhost:5000 python cli.py
+```
+
+```bash
+set -a # automatically export all variables
+source mlflow_run.env
+set +a
+```
+
+- [Artifact Stores — MLflow 2.15.0rc0 documentation](https://mlflow.org/docs/latest/tracking/artifacts-stores.html#amazon-s3-and-s3-compatible-storage)
