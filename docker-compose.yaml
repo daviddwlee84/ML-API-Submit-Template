@@ -18,6 +18,7 @@ services:
       interval: 5s
       timeout: 5s
       retries: 3
+
   s3:
     restart: unless-stopped
     image: minio/minio
@@ -45,7 +46,6 @@ services:
       interval: 30s
       timeout: 20s
       retries: 3
-
 
   create_s3_buckets:
     image: minio/mc

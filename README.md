@@ -54,8 +54,8 @@ But according to experience, if MLFlow runs without database and if we have tons
 - [Toumash/mlflow-docker: Ready to run docker-compose configuration for ML Flow with Mysql and Minio S3](https://github.com/Toumash/mlflow-docker)
 
 ```bash
-docker-compose --env-file mlflow_config.env up down
-docker-compose --env-file mlflow_config.env up -d --build
+docker compose --env-file mlflow_config.env down
+docker compose --env-file mlflow_config.env up -d --build
 
 export MLFLOW_TRACKING_URI=http://localhost:5000  # Replace with remote host name or IP address in an actual environment
 export MLFLOW_S3_ENDPOINT_URL=http://localhost:9000
