@@ -4,20 +4,24 @@ import mlflow
 import mlflow.tracking.fluent
 from train import TrainTask, train_model, TrainArgs
 import config
+import utils
 
+PARALLEL_NUM = utils.get_parallel_num()
+print(f"Parallel Number: {PARALLEL_NUM}")
 
 app = FastAPI()
-# TODO: set max_workers to be number of GPU / if CPU then no limit..?
 # NOTE: somehow start same parameter tasks: using Process will get same result (loss) while using Thread + nested will get different result (loss)
 if config.USE_THREAD:
     from concurrent.futures import ThreadPoolExecutor
 
-    executor = ThreadPoolExecutor(max_workers=4)  # Limit the number of concurrent tasks
+    executor = ThreadPoolExecutor(
+        max_workers=PARALLEL_NUM
+    )  # Limit the number of concurrent tasks
 else:
     from concurrent.futures import ProcessPoolExecutor
 
     executor = ProcessPoolExecutor(
-        max_workers=4
+        max_workers=PARALLEL_NUM
     )  # Limit the number of concurrent tasks
 
 

@@ -1,48 +1,12 @@
-from typing import Tuple, Optional, Union
-import GPUtil
+from typing import Optional, Union
 import torch
-import time
-import os
 from filelock import FileLock
 from pydantic import BaseModel
 import mlflow
 import mlflow.pytorch
 from tap import Tap
 import config
-
-# Constants
-LOCK_DIR = os.path.expanduser("~/.gpu_locks")
-LOCK_EXTENSION = ".lock"
-WAIT_TIME = 10
-
-
-def create_lock_dir() -> None:
-    if not os.path.exists(LOCK_DIR):
-        os.makedirs(LOCK_DIR)
-
-
-def get_lock_file_path(gpu_id: int) -> str:
-    return os.path.join(LOCK_DIR, f"gpu_{gpu_id}{LOCK_EXTENSION}")
-
-
-def get_available_gpu() -> Tuple[int, FileLock]:
-    create_lock_dir()
-
-    while True:
-        available_gpus = GPUtil.getAvailable(
-            order="first", limit=1, maxLoad=0.05, maxMemory=0.05, includeNan=False
-        )
-        for gpu_id in available_gpus:
-            lock_file = get_lock_file_path(gpu_id)
-            lock = FileLock(lock_file)
-            try:
-                lock.acquire(timeout=0)  # Try to acquire the lock without waiting
-                return gpu_id, lock
-            except:
-                continue
-
-        print("No available GPUs. Waiting...")
-        time.sleep(WAIT_TIME)
+import utils
 
 
 class TrainTask(BaseModel):
@@ -69,45 +33,13 @@ def get_args_from_model(param: TrainTask) -> TrainArgs:
     return TrainArgs().from_dict(param.model_dump())
 
 
-class DummyContextManager:
-    def __enter__(self):
-        pass  # No setup needed
-
-    def __exit__(self, exc_type, exc_value, traceback):
-        pass  # No cleanup needed
-
-    def __bool__(self) -> bool:
-        return False  # Make this object a False means "no lock"
-
-
 def train_model(
     task: Union[TrainTask, TrainArgs],
     run_id: Optional[str] = None,
     resume_state_dict: dict = {},
 ):
     try:
-        if torch.cuda.is_available():
-            if task.gpu_id == -1:
-                gpu_id, lock = get_available_gpu()
-            else:
-                gpu_id = task.gpu_id
-                lock_file = get_lock_file_path(gpu_id)
-                lock = FileLock(lock_file)
-                try:
-                    lock.acquire(timeout=0)
-                except:
-                    print(f"GPU {gpu_id} is currently occupied. Waiting...")
-                    while True:
-                        try:
-                            lock.acquire(timeout=0)
-                            break
-                        except:
-                            time.sleep(WAIT_TIME)
-
-            device = torch.device(f"cuda:{gpu_id}")
-        else:
-            device = torch.device("cpu")
-            lock = DummyContextManager()
+        device, lock = utils.get_device_and_lock(task.gpu_id)
 
         print(f"Using device {device}")
 

@@ -8,6 +8,8 @@ pip install -r requirements.txt
 
 ## Usage
 
+> Assume each training task only runs on a single GPU
+
 ### CLI
 
 > Better used with [`pueue`](https://github.com/Nukesor/pueue)
