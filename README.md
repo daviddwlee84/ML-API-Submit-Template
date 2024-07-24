@@ -34,6 +34,28 @@ streamlit run ui.py
 
 http://localhost:8501/docs
 
+### Seem MLFlow result
+
+> Will use `./mlruns`
+
+```bash
+mlflow ui
+```
+
+---
+
+Use SQLite
+
+```bash
+export MLFLOW_TRACKING_URI=sqlite:///mlruns.db
+
+# ... do some training
+MLFLOW_TRACKING_URI=sqlite:///mlruns.db python cli.py
+
+mlflow ui --port 8080 --backend-store-uri sqlite:///mlruns.db
+```
+
+
 ## Additional Setup
 
 By default MLFlow can be run without [Tracking Server](https://mlflow.org/docs/latest/tracking.html#tracking-server)
@@ -60,13 +82,16 @@ docker compose --env-file mlflow_config.env up -d --build
 
 ```bash
 # Will use local artifact
-MLFLOW_TRACKING_URI=http://localhost:5000 python cli.py
+MLFLOW_TRACKING_URI=http://localhost:8080 python cli.py
 ```
 
 ```bash
 set -a # automatically export all variables
 source mlflow_run.env
 set +a
+
+# ...
 ```
 
 - [Artifact Stores — MLflow 2.15.0rc0 documentation](https://mlflow.org/docs/latest/tracking/artifacts-stores.html#amazon-s3-and-s3-compatible-storage)
+- [Remote Experiment Tracking with MLflow Tracking Server — MLflow 2.15.0rc0 documentation](https://mlflow.org/docs/latest/tracking/tutorials/remote-server.html#configure-access)

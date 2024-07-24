@@ -5,18 +5,25 @@ from train import TrainTask, train_model
 
 
 app = FastAPI()
+# TODO: set max_workers to be number of GPU / if CPU then no limit..?
 executor = ThreadPoolExecutor(max_workers=4)  # Limit the number of concurrent tasks
 
 
 @app.post("/train")
 def submit_training(task: TrainTask):
+    # BUG: currently if there is any active run then it will conflict
     # Alternatives
-    # client = mlflow.MlflowClient()
-    # run = client.create_run(experiment_id=mlflow.tracking.fluent._get_experiment_id(), run_name=task.run_name)
-    with mlflow.start_run(run_name=task.run_name) as run:
-        run_id = run.info.run_id
-        executor.submit(train_model, task, run_id)
-    return {"message": "Training task has been submitted", "run_id": run_id}
+    client = mlflow.MlflowClient()
+    run = client.create_run(
+        experiment_id=mlflow.tracking.fluent._get_experiment_id(),
+        run_name=task.run_name,
+    )
+    executor.submit(train_model, task, run.info.run_id)
+    return {"message": "Training task has been submitted", "run_id": run.info.run_id}
+    # with mlflow.start_run(run_name=task.run_name) as run:
+    #     run_id = run.info.run_id
+    #     executor.submit(train_model, task, run_id)
+    # return {"message": "Training task has been submitted", "run_id": run_id}
 
 
 @app.get("/status/{run_id}")

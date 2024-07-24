@@ -106,6 +106,7 @@ def train_model(task: Union[TrainTask, TrainArgs], run_id: Optional[str] = None)
             try:
                 with mlflow.start_run(
                     run_id=run_id,
+                    run_name=task.run_name,
                     tags={
                         "Device": str(device),
                     },
