@@ -93,6 +93,7 @@ docker compose --env-file mlflow_config.env up -d --build
 ```bash
 # Will use local artifact
 MLFLOW_TRACKING_URI=http://localhost:8080 python cli.py
+MLFLOW_TRACKING_URI=http://localhost:8080 python api.py
 ```
 
 ```bash

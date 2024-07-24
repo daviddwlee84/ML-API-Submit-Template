@@ -61,15 +61,15 @@ with resume_tab:
             "run_id": run_id,
         }
 
-        # Send POST request to submit the training task
-        response = requests.post(f"{API_URL}/train", params=payload)
+        # Send POST request to submit the resuming task
+        response = requests.post(f"{API_URL}/resume", params=payload)
         if response.status_code == 200:
             response_data = response.json()
             run_id = response_data["run_id"]
             st.success(f"Training task has been resumed. Run ID: {run_id}")
             st.session_state["submitted_tasks"][run_id] = "pending"
         else:
-            st.error("Failed to resume the training task.")
+            st.error(f"Failed to resume the training task. {response.json()}")
 
 
 # Display submitted tasks and their statuses
