@@ -13,16 +13,26 @@ pip install -r requirements.txt
 > Better used with [`pueue`](https://github.com/Nukesor/pueue)
 
 ```bash
+# See arguments
 python cli.py --help
+
+# Train
+python ./cli.py
+# Resume
+python ./cli.py --resume_run_id 38ef359c0f914a99986a8e6d392e5b13
 ```
 
 ### API
 
 ```bash
 python api.py
+# or
+fastapi dev ./api.py
 ```
 
 http://localhost:8000/docs
+
+> If got error `[WinError 10013] An attempt was made to access a socket in a way forbidden by its access permissions`, this might mean the port is occupied
 
 ### WebUI
 

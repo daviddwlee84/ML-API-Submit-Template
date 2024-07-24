@@ -2,7 +2,7 @@ from typing import Optional
 from fastapi import FastAPI, HTTPException
 import mlflow
 import mlflow.tracking.fluent
-from train import TrainTask, train_model
+from train import TrainTask, train_model, TrainArgs
 import config
 
 
@@ -51,6 +51,41 @@ def submit_training(task: TrainTask):
 
 
 # TODO: resume training
+@app.post("/resume")
+def resume_training(run_id: str):
+    client = mlflow.MlflowClient()
+    try:
+        run = client.get_run(run_id)
+    except:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Failed to get run. Might be invalid run ID {run_id}",
+        )
+
+    if run.info.status == "RUNNING":
+        raise HTTPException(
+            status_code=400,
+            detail=f"Run {run_id} is running.",
+        )
+
+    try:
+        arg_dict = mlflow.artifacts.load_dict(f"{run.info.artifact_uri}/TrainArgs.json")
+    except:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to load trained argument. Not able to resume.",
+        )
+    task = TrainArgs().from_dict(arg_dict)
+    if not (client.list_artifacts(run.info.run_id, f"checkpoint/latest")):
+        raise HTTPException(
+            status_code=404,
+            detail=f"Not found checkpoint to resume: {run.info.artifact_uri}/checkpoint/latest",
+        )
+    resume_state_dict = mlflow.pytorch.load_state_dict(
+        run.info.artifact_uri + f"/checkpoint/latest"
+    )
+    executor.submit(train_model, task, run.info.run_id, resume_state_dict)
+    return {"message": "Training task has been resumed", "run_id": run.info.run_id}
 
 
 @app.get("/status/{run_id}")
