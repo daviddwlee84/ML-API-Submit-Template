@@ -1,4 +1,4 @@
-from typing import Tuple, Union, Optional, Literal
+from typing import Tuple, Union, Optional, Literal, ContextManager
 import config
 import os
 import time
@@ -17,6 +17,12 @@ class DummyContextManager:
 
     def __bool__(self) -> bool:
         return False  # Make this object a False means "no lock"
+
+    def acquire(self) -> None:
+        return
+
+    def release(self) -> None:
+        return
 
 
 class TorchDeviceManager:
@@ -62,7 +68,7 @@ class TorchDeviceManager:
         while True:
             available_gpus = GPUtil.getAvailable(
                 order="first",
-                limit=1,
+                limit=self.get_gpu_number(),
                 maxLoad=0.05,
                 maxMemory=0.05,
                 includeNan=False,
@@ -78,6 +84,10 @@ class TorchDeviceManager:
 
             logger.info("No available GPUs. Waiting...")
             time.sleep(self._wait_time)
+
+    @staticmethod
+    def _get_dummy_lock() -> ContextManager:
+        return DummyContextManager()
 
     def get_device_and_lock(
         self,
@@ -107,7 +117,7 @@ class TorchDeviceManager:
             )
         else:
             device = torch.device("cpu") if not return_str else "cpu"
-            lock = DummyContextManager()
+            lock = self._get_dummy_lock()
 
         return device, lock
 
@@ -117,3 +127,15 @@ def get_parallel_num() -> Optional[int]:
         return len(GPUtil.getGPUs())
     else:
         return None if not config.MAX_PARALLEL_NUM else config.MAX_PARALLEL_NUM
+
+
+if __name__ == "__main__":
+    manager = TorchDeviceManager()
+    print(manager.get_gpu_number())
+    device, lock = manager.get_device_and_lock()
+    lock.acquire()
+    print(device, lock)
+    import ipdb
+
+    ipdb.set_trace()
+    lock.release()
