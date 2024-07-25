@@ -108,3 +108,30 @@ set +a
 
 - [Artifact Stores — MLflow 2.15.0rc0 documentation](https://mlflow.org/docs/latest/tracking/artifacts-stores.html#amazon-s3-and-s3-compatible-storage)
 - [Remote Experiment Tracking with MLflow Tracking Server — MLflow 2.15.0rc0 documentation](https://mlflow.org/docs/latest/tracking/tutorials/remote-server.html#configure-access)
+
+---
+
+## Export MLFlow experiments from one tracking server to another
+
+- [mlflow/mlflow-export-import](https://github.com/mlflow/mlflow-export-import?tab=readme-ov-file)
+
+```bash
+# Install
+pip install -i https://pypi.tuna.tsinghua.edu.cn/simple git+https:///github.com/mlflow/mlflow-export-import/#egg=mlflow-export-import
+
+# Run local tracking server and export ./mlruns
+mlflow server --port 5000
+MLFLOW_TRACKING_URI=http://localhost:5000 export-all --output-dir ./export_all
+MLFLOW_TRACKING_URI=http://localhost:5000 export-experiment --experiment Default --output-dir ./export_exp
+MLFLOW_TRACKING_URI=http://localhost:5000 export-run --run-id 5d9dcca9391643e293e9e3ac6f98b3eb --output-dir ./export_run
+
+# Import experiment to another tracking server
+MLFLOW_TRACKING_URI=http://localhost:8080 import-experiment --experiment-name Default --input-dir ./export_exp
+MLFLOW_TRACKING_URI=http://localhost:8080 import-all --input-dir ./export_all
+MLFLOW_TRACKING_URI=http://localhost:8080 import-run --run-id 5d9dcca9391643e293e9e3ac6f98b3eb --input-dir ./export_run --experiment-name 'Experiment Name [with special char]'
+```
+
+> NOTE: currently export-import runs don't keep the `run_id`
+>
+> - [Is it possible to keep the run id? · Issue #163 · mlflow/mlflow-export-import](https://github.com/mlflow/mlflow-export-import/issues/163)
+> - [[FR] Add optional user specified `run_id` in create_run · Issue #12780 · mlflow/mlflow](https://github.com/mlflow/mlflow/issues/12780)

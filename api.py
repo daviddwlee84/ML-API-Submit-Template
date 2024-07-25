@@ -42,6 +42,7 @@ def submit_training(task: TrainTask):
     # https://mlflow.org/docs/latest/tracking/tracking-api.html#launching-multiple-runs
     # https://github.com/mlflow/mlflow/issues/3592
     client = mlflow.MlflowClient()
+    # create_run unlike :py:func:`mlflow.start_run`, does not change the "active run" used by :py:func:`mlflow.log_param`.
     run = client.create_run(
         experiment_id=get_exp_id(task.exp_name),
         run_name=task.run_name,
