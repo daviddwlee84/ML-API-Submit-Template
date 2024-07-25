@@ -5,7 +5,7 @@ import mlflow
 import mlflow.pytorch
 from tap import Tap
 import config
-import utils
+from utils import TorchDeviceManager
 from loguru import logger
 from tqdm.auto import tqdm
 
@@ -40,7 +40,8 @@ def train_model(
     resume_state_dict: dict = {},
 ):
     try:
-        device, lock = utils.get_device_and_lock(task.gpu_id)
+
+        device, lock = TorchDeviceManager().get_device_and_lock(task.gpu_id)
 
         logger.info(f"Using device {device}")
 
