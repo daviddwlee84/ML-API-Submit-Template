@@ -1,8 +1,7 @@
 from typing import Optional
 from fastapi import FastAPI, HTTPException
 import mlflow
-import mlflow.tracking.fluent
-from train import TrainTask, train_model, TrainArgs
+from train import TrainTask, train_model, TrainArgs, get_exp_id
 import config
 import utils
 from loguru import logger
@@ -24,17 +23,6 @@ else:
     executor = ProcessPoolExecutor(
         max_workers=PARALLEL_NUM
     )  # Limit the number of concurrent tasks
-
-
-def get_exp_id(exp_name: Optional[str] = None) -> str:
-    if not exp_name:
-        exp_id = mlflow.tracking.fluent._get_experiment_id()
-    else:
-        if (exp := mlflow.get_experiment_by_name(exp_name)) is None:
-            exp_id = mlflow.create_experiment(exp_name)
-        else:
-            exp_id = exp.experiment_id
-    return exp_id
 
 
 @app.post("/train")

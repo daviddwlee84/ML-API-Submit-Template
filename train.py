@@ -3,6 +3,7 @@ import torch
 from pydantic import BaseModel
 import mlflow
 import mlflow.pytorch
+import mlflow.tracking.fluent
 from tap import Tap
 import config
 from utils import TorchDeviceManager
@@ -34,6 +35,17 @@ def get_args_from_model(param: TrainTask) -> TrainArgs:
     return TrainArgs().from_dict(param.model_dump())
 
 
+def get_exp_id(exp_name: Optional[str] = None) -> str:
+    if not exp_name:
+        exp_id = mlflow.tracking.fluent._get_experiment_id()
+    else:
+        if (exp := mlflow.get_experiment_by_name(exp_name)) is None:
+            exp_id = mlflow.create_experiment(exp_name)
+        else:
+            exp_id = exp.experiment_id
+    return exp_id
+
+
 def train_model(
     task: Union[TrainTask, TrainArgs],
     run_id: Optional[str] = None,
@@ -63,6 +75,7 @@ def train_model(
             try:
                 with mlflow.start_run(
                     run_id=run_id,
+                    experiment_id=get_exp_id(task.exp_name) if task.exp_name else None,
                     run_name=task.run_name,
                     tags={
                         "Device": str(device),

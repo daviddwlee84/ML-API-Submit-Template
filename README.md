@@ -46,12 +46,24 @@ streamlit run ui.py
 
 http://localhost:8501/docs
 
-### Seem MLFlow result
-
+> ### Seem MLFlow result
+> 
 > Will use `./mlruns`
+> 
+> ```bash
+> mlflow ui
+> ```
+
+### Pueue
+
+- [Nukesor/pueue: :stars: Manage your shell commands.](https://github.com/Nukesor/pueue)
+  1. Download `pueued` and `pueue`
+  2. (optional) put them to system path
+  3. run `pueued` (optional: make this system service)
+  4. check running with `pueue`
 
 ```bash
-mlflow ui
+python pueue.py
 ```
 
 ---
