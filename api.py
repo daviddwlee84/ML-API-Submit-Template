@@ -1,11 +1,11 @@
-from typing import Optional
+from typing import Optional, Literal
 from fastapi import FastAPI, HTTPException, Query
 import mlflow
 from train import TrainTask, train_model, TrainArgs, get_exp_id, get_args_from_model
 import config
 import utils
 from loguru import logger
-from pueue import pueue_submit
+from pueue import pueue_submit, pueue_logs, pueue_status
 from cli import ResumeArgs
 
 PARALLEL_NUM = utils.get_parallel_num()
@@ -30,10 +30,12 @@ else:
 @app.post("/train")
 def submit_training(task: TrainTask, pueue: bool = Query(False)):
     if pueue:
-        pueue_return = pueue_submit(get_args_from_model(task))
+        task_id = pueue_submit(
+            get_args_from_model(task), pueue_return_task_id_only=True
+        )
         return {
             "message": "Training task has been submitted to pueue",
-            "pueue_return": pueue_return.strip(),
+            "task_id": task_id,
         }
 
     # https://mlflow.org/docs/latest/tracking/tracking-api.html#launching-multiple-runs
@@ -57,12 +59,13 @@ def submit_training(task: TrainTask, pueue: bool = Query(False)):
 @app.post("/resume")
 def resume_training(run_id: str, pueue: bool = Query(False)):
     if pueue:
-        pueue_return = pueue_submit(
-            ResumeArgs().parse_args(["--resume_run_id", run_id])
+        task_id = pueue_submit(
+            ResumeArgs().parse_args(["--resume_run_id", run_id]),
+            pueue_return_task_id_only=True,
         )
         return {
             "message": "Training task has been submitted to pueue",
-            "pueue_return": pueue_return.strip(),
+            "task_id": task_id,
         }
 
     client = mlflow.MlflowClient()
@@ -113,6 +116,23 @@ def get_task_status(run_id: str):
             "params": run.data.params,
             "tags": run.data.tags,
         }
+    except Exception as e:
+        raise HTTPException(
+            status_code=500, detail=f"Could not retrieve run status: {e}"
+        )
+
+
+@app.get("/pueue/{mode}/{task_id}")
+def get_pueue_task_status(
+    mode: Literal["status", "logs"], task_id: Optional[str] = None
+):
+    try:
+        if mode == "status":
+            return pueue_status(task_id=task_id)
+        elif mode == "logs":
+            return pueue_logs(task_id=task_id)
+        else:
+            raise NotImplementedError(f"Unknown mode {mode}")
     except Exception as e:
         raise HTTPException(
             status_code=500, detail=f"Could not retrieve run status: {e}"

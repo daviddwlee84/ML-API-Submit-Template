@@ -5,6 +5,7 @@ import sys
 from cli import ResumeArgs
 from train import TrainArgs
 from loguru import logger
+import json
 
 curr_dir = os.path.dirname(os.path.abspath(__file__))
 
@@ -41,12 +42,17 @@ def pueue_submit(
     pueue_group: Optional[str] = None,
     pueue_parallel: Optional[int] = 1,
     dir_path: str = curr_dir,
+    pueue_return_task_id_only: bool = False,
     dry_run: bool = False,
 ) -> str:  # Tuple[str, str]:
     args = ["pueue", "add"]
 
     if pueue_group:
         args.extend(["-g", f'"{pueue_group}"'])
+
+    if pueue_return_task_id_only:
+        # https://github.com/Nukesor/pueue/blob/main/CHANGELOG.md#added-14
+        args.append("--print-task-id")
 
     pueue_set_parallel(pueue_group, pueue_parallel)
 
@@ -90,7 +96,29 @@ def pueue_submit(
         return command  # , ""
 
     result = subprocess.run(command, cwd=dir_path, capture_output=True, text=True)
-    return result.stdout  # , result.stderr
+    return result.stdout.strip()  # , result.stderr
+
+
+def pueue_status(task_id: Optional[str] = None) -> dict:
+    all_status = json.loads(
+        subprocess.run("pueue status --json", stdout=subprocess.PIPE).stdout.decode()
+    )
+    if task_id:
+        return all_status["tasks"][task_id]
+    return all_status
+
+
+def pueue_logs(task_id: Optional[str] = None) -> dict:
+    if task_id:
+        return json.loads(
+            subprocess.run(
+                f"pueue log {task_id} --json", stdout=subprocess.PIPE
+            ).stdout.decode()
+        )[task_id]
+
+    return json.loads(
+        subprocess.run("pueue log --json", stdout=subprocess.PIPE).stdout.decode()
+    )
 
 
 if __name__ == "__main__":
@@ -100,7 +128,15 @@ if __name__ == "__main__":
     args.exp_name = "Name with space"
     print(pueue_submit(args, "Non-Default Group", dry_run=True))
     # print(pueue_submit(args, "Non-Default Group"))
-    print(pueue_submit(args, "Non-Default Group", 3))
+    print(pueue_status())
+    print(pueue_logs())
+    print(
+        task_id := pueue_submit(
+            args, "Non-Default Group", 3, pueue_return_task_id_only=True
+        )
+    )
+    print(task_status := pueue_status(task_id))
+    print(task_log := pueue_logs(task_id))
     resume_args = ResumeArgs().parse_args(
         ["--resume_run_id", "59839d3231604cb093053cf76cec5143"]
     )
