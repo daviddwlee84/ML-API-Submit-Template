@@ -2,11 +2,13 @@ import streamlit as st
 import requests
 
 # FastAPI server URL
-API_URL = "http://localhost:8000"
+API_URL = "http://localhost:8787"
 
 # A dictionary to keep track of submitted tasks and their statuses
 if "submitted_tasks" not in st.session_state:
     st.session_state["submitted_tasks"] = {}
+if "submitted_pueue_tasks" not in st.session_state:
+    st.session_state["submitted_pueue_tasks"] = {}
 
 # Streamlit UI
 st.title("MLFlow Training Task Manager")
@@ -31,16 +33,16 @@ with train_tab:
         step=1,
     )
 
-    if st.button("Submit Training Task"):
-        # Prepare the payload
-        payload = {
-            "learning_rate": learning_rate,
-            "epochs": epochs,
-            "gpu_id": gpu_id,
-            "run_name": run_name if run_name else None,
-            "exp_name": exp_name if exp_name else None,
-        }
+    # Prepare the payload
+    payload = {
+        "learning_rate": learning_rate,
+        "epochs": epochs,
+        "gpu_id": gpu_id,
+        "run_name": run_name if run_name else None,
+        "exp_name": exp_name if exp_name else None,
+    }
 
+    if st.button("Submit Training Task"):
         # Send POST request to submit the training task
         response = requests.post(f"{API_URL}/train", json=payload)
         if response.status_code == 200:
@@ -51,15 +53,32 @@ with train_tab:
         else:
             st.error("Failed to submit the training task.")
 
+    if st.button("Submit Training Task using Pueue"):
+        # Send POST request to submit the training task
+        response = requests.post(
+            f"{API_URL}/train", json=payload, params={"pueue": True}
+        )
+        if response.status_code == 200:
+            response_data = response.json()
+            task_id = response_data["task_id"]
+            st.success(f"Training task has been submitted to Pueue. Task ID: {task_id}")
+            st.session_state["submitted_pueue_tasks"][task_id] = requests.get(
+                f"{API_URL}/pueue/running_status/{task_id}"
+            ).json()
+        else:
+            st.error("Failed to submit the training task to Pueue.")
+
 with resume_tab:
     # Resuming parameters input form
     st.header("Submit a Resuming Task")
     run_id = st.text_input("Run ID")
+
+    # Prepare the payload
+    payload = {
+        "run_id": run_id,
+    }
+
     if st.button("Submit Resuming Task"):
-        # Prepare the payload
-        payload = {
-            "run_id": run_id,
-        }
 
         # Send POST request to submit the resuming task
         response = requests.post(f"{API_URL}/resume", params=payload)
@@ -71,11 +90,28 @@ with resume_tab:
         else:
             st.error(f"Failed to resume the training task. {response.json()}")
 
+    if st.button("Submit Resuming Task using Pueue"):
+        payload["pueue"] = True
+        # Send POST request to submit the resuming task
+        response = requests.post(f"{API_URL}/resume", params=payload)
+        if response.status_code == 200:
+            response_data = response.json()
+            task_id = response_data["task_id"]
+            st.success(
+                f"Resuming task for run {run_id} has been submitted to Pueue. Task ID: {task_id}"
+            )
+            st.session_state["submitted_pueue_tasks"][task_id] = requests.get(
+                f"{API_URL}/pueue/running_status/{task_id}"
+            ).json()
+        else:
+            st.error("Failed to submit the resuming task to Pueue.")
+
 
 # Display submitted tasks and their statuses
-@st.experimental_fragment(run_every="30s")
+# Please replace st.experimental_fragment with st.fragment.
+# st.experimental_fragment will be removed after 2025-01-01.
+@st.fragment(run_every="30s")
 def display_status():
-    st.header("Submitted Tasks")
     for run_id, status in st.session_state["submitted_tasks"].items():
         st.write(f"Run ID: {run_id}, Status: {status}")
 
@@ -89,4 +125,24 @@ def display_status():
             st.error(f"Failed to retrieve the status of task {run_id}")
 
 
-display_status()
+@st.fragment(run_every="30s")
+def display_pueue_status():
+    for task_id in st.session_state["submitted_pueue_tasks"].keys():
+        running_status = requests.get(
+            f"{API_URL}/pueue/running_status/{task_id}"
+        ).json()
+        st.session_state["submitted_pueue_tasks"][task_id] = running_status
+        st.write(f"Task ID: {task_id}, Status: {running_status}")
+        # Check the status of the task
+        output = requests.get(
+            f"{API_URL}/pueue/output/{task_id}",
+        ).json()["output"]
+        st.markdown(f"```\n{output}\n```", unsafe_allow_html=True)
+
+
+st.header("Submitted Tasks")
+fastapi_tab, pueue_tab = st.tabs(["FastAPI", "Pueue"])
+with fastapi_tab:
+    display_status()
+with pueue_tab:
+    display_pueue_status()

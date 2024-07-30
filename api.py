@@ -124,13 +124,47 @@ def get_task_status(run_id: str):
 
 @app.get("/pueue/{mode}/{task_id}")
 def get_pueue_task_status(
-    mode: Literal["status", "logs"], task_id: Optional[str] = None
+    mode: Literal["status", "logs", "running_status", "output"],
+    task_id: Optional[str] = None,
 ):
     try:
         if mode == "status":
             return pueue_status(task_id=task_id)
         elif mode == "logs":
             return pueue_logs(task_id=task_id)
+        elif mode == "running_status":
+            try:
+                assert task_id
+                status = pueue_logs(task_id=task_id)["task"]["status"]
+                if isinstance(status, dict):
+                    # {'detail': 'Not Found'}
+                    return (
+                        "Success"
+                        if "Done" in status
+                        else status
+                    )
+                elif isinstance(status, str):
+                    return status
+                else:
+                    raise ValueError(f"Unknown status {status}")
+            except:
+                raise HTTPException(
+                    status_code=400,
+                    detail="In running_status mode you should query for an existing task_id",
+                )
+        elif mode == "output":
+            try:
+                assert task_id
+                log = pueue_logs(task_id=task_id)
+                return dict(
+                    output=log["output"],
+                    is_finished="Done" in log["task"]["status"],
+                )
+            except:
+                raise HTTPException(
+                    status_code=400,
+                    detail="In output mode you should query for an existing task_id",
+                )
         else:
             raise NotImplementedError(f"Unknown mode {mode}")
     except Exception as e:
