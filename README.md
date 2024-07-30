@@ -51,7 +51,7 @@ http://localhost:8501/docs
 > Will use `./mlruns`
 > 
 > ```bash
-> mlflow ui
+> mlflow ui --port 8080
 > ```
 
 ### Pueue

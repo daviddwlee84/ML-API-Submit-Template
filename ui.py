@@ -1,8 +1,10 @@
 import streamlit as st
 import requests
+from streamlit.components.v1 import iframe
 
 # FastAPI server URL
-API_URL = "http://localhost:8787"
+API_URL = "http://localhost:8000"
+MLFLOW_URL = "http://localhost:8080"
 
 # A dictionary to keep track of submitted tasks and their statuses
 if "submitted_tasks" not in st.session_state:
@@ -146,3 +148,12 @@ with fastapi_tab:
     display_status()
 with pueue_tab:
     display_pueue_status()
+
+# Try to embed MLFlow
+try:
+    requests.head(MLFLOW_URL)
+    mlflow_ui_running = True
+except:
+    mlflow_ui_running = False
+if mlflow_ui_running:
+    iframe(MLFLOW_URL, height=800, scrolling=True)
