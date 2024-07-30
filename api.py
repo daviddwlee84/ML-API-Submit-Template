@@ -1,10 +1,12 @@
 from typing import Optional
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Query
 import mlflow
-from train import TrainTask, train_model, TrainArgs, get_exp_id
+from train import TrainTask, train_model, TrainArgs, get_exp_id, get_args_from_model
 import config
 import utils
 from loguru import logger
+from pueue import pueue_submit
+from cli import ResumeArgs
 
 PARALLEL_NUM = utils.get_parallel_num()
 logger.info(f"Parallel Number: {PARALLEL_NUM}")
@@ -26,7 +28,14 @@ else:
 
 
 @app.post("/train")
-def submit_training(task: TrainTask):
+def submit_training(task: TrainTask, pueue: bool = Query(False)):
+    if pueue:
+        pueue_return = pueue_submit(get_args_from_model(task))
+        return {
+            "message": "Training task has been submitted to pueue",
+            "pueue_return": pueue_return.strip(),
+        }
+
     # https://mlflow.org/docs/latest/tracking/tracking-api.html#launching-multiple-runs
     # https://github.com/mlflow/mlflow/issues/3592
     client = mlflow.MlflowClient()
@@ -46,7 +55,16 @@ def submit_training(task: TrainTask):
 
 # TODO: resume training
 @app.post("/resume")
-def resume_training(run_id: str):
+def resume_training(run_id: str, pueue: bool = Query(False)):
+    if pueue:
+        pueue_return = pueue_submit(
+            ResumeArgs().parse_args(["--resume_run_id", run_id])
+        )
+        return {
+            "message": "Training task has been submitted to pueue",
+            "pueue_return": pueue_return.strip(),
+        }
+
     client = mlflow.MlflowClient()
     try:
         run = client.get_run(run_id)
