@@ -15,7 +15,7 @@ def pueue_set_parallel(
 ) -> None:
     if pueue_group:
         temp_return = subprocess.run(
-            f'pueue group add "{pueue_group}"', capture_output=True
+            ["pueue", "group", "add", pueue_group], capture_output=True, check=True
         )
         logger.info(
             f"Create pueue group {pueue_group}: {temp_return.stdout.decode().strip()}"
@@ -24,15 +24,18 @@ def pueue_set_parallel(
     if pueue_parallel > 1:
         if pueue_group:
             temp_return = subprocess.run(
-                f'pueue parallel -g "{pueue_group}" {pueue_parallel}',
+                ["pueue", "parallel", "-g", pueue_group, f"{pueue_parallel}"],
                 capture_output=True,
+                check=True,
             )
             logger.info(
                 f"Set parallel for {pueue_group}: {temp_return.stdout.decode().strip()}"
             )
         else:
             temp_return = subprocess.run(
-                f'pueue parallel {pueue_parallel}"', capture_output=True
+                ["pueue", "parallel", f"{pueue_parallel}"],
+                capture_output=True,
+                check=True,
             )
             logger.info(f"Set parallel: {temp_return.stdout.decode().strip()}")
 
@@ -48,7 +51,7 @@ def pueue_submit(
     args = ["pueue", "add"]
 
     if pueue_group:
-        args.extend(["-g", f'"{pueue_group}"'])
+        args.extend(["-g", pueue_group])
 
     if pueue_return_task_id_only:
         # https://github.com/Nukesor/pueue/blob/main/CHANGELOG.md#added-14
@@ -95,13 +98,18 @@ def pueue_submit(
     if dry_run:
         return command  # , ""
 
-    result = subprocess.run(command, cwd=dir_path, capture_output=True, text=True)
+    # https://docs.python.org/3/library/subprocess.html#subprocess.run
+    result = subprocess.run(
+        args, cwd=dir_path, capture_output=True, text=True, check=True
+    )
     return result.stdout.strip()  # , result.stderr
 
 
 def pueue_status(task_id: Optional[str] = None) -> dict:
     all_status = json.loads(
-        subprocess.run("pueue status --json", stdout=subprocess.PIPE).stdout.decode()
+        subprocess.run(
+            ["pueue", "status", "--json"], stdout=subprocess.PIPE, check=True
+        ).stdout.decode()
     )
     if task_id:
         return all_status["tasks"][task_id]
@@ -112,12 +120,14 @@ def pueue_logs(task_id: Optional[str] = None) -> dict:
     if task_id:
         return json.loads(
             subprocess.run(
-                f"pueue log {task_id} --json", stdout=subprocess.PIPE
+                ["pueue", "log", task_id, "--json"], stdout=subprocess.PIPE, check=True
             ).stdout.decode()
         )[task_id]
 
     return json.loads(
-        subprocess.run("pueue log --json", stdout=subprocess.PIPE).stdout.decode()
+        subprocess.run(
+            ["pueue", "log", "--json"], stdout=subprocess.PIPE, check=True
+        ).stdout.decode()
     )
 
 
