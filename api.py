@@ -127,6 +127,9 @@ def get_pueue_task_status(
     mode: Literal["status", "logs", "running_status", "output"],
     task_id: Optional[str] = None,
 ):
+    """
+    NOTE: Won't have output when the task has not run (e.g. Queued)
+    """
     try:
         if mode == "status":
             return pueue_status(task_id=task_id)
@@ -138,11 +141,7 @@ def get_pueue_task_status(
                 status = pueue_logs(task_id=task_id)["task"]["status"]
                 if isinstance(status, dict):
                     # {'detail': 'Not Found'}
-                    return (
-                        "Success"
-                        if "Done" in status
-                        else status
-                    )
+                    return "Success" if "Done" in status else status
                 elif isinstance(status, str):
                     return status
                 else:
