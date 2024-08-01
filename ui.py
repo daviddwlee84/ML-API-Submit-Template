@@ -3,7 +3,7 @@ import requests
 from streamlit.components.v1 import iframe
 
 # FastAPI server URL
-API_URL = "http://localhost:8000"
+API_URL = "http://localhost:8001"
 MLFLOW_URL = "http://localhost:8080"
 
 # A dictionary to keep track of submitted tasks and their statuses
@@ -34,6 +34,8 @@ with train_tab:
         value=-1,
         step=1,
     )
+    save_every_epoch = st.checkbox("Save every epoch", False)
+    save_model = st.checkbox("Save model", True)
 
     # Prepare the payload
     payload = {
@@ -42,6 +44,8 @@ with train_tab:
         "gpu_id": gpu_id,
         "run_name": run_name if run_name else None,
         "exp_name": exp_name if exp_name else None,
+        "save_every_epoch": save_every_epoch,
+        "save_model": save_model,
     }
 
     if st.button("Submit Training Task"):
@@ -49,9 +53,12 @@ with train_tab:
         response = requests.post(f"{API_URL}/train", json=payload)
         if response.status_code == 200:
             response_data = response.json()
-            run_id = response_data["run_id"]
-            st.success(f"Training task has been submitted. Run ID: {run_id}")
-            st.session_state["submitted_tasks"][run_id] = "pending"
+            try:
+                run_id = response_data["run_id"]
+                st.success(f"Training task has been submitted. Run ID: {run_id}")
+                st.session_state["submitted_tasks"][run_id] = "pending"
+            except:
+                st.error(response_data)
         else:
             st.error("Failed to submit the training task.")
 
@@ -62,11 +69,16 @@ with train_tab:
         )
         if response.status_code == 200:
             response_data = response.json()
-            task_id = response_data["task_id"]
-            st.success(f"Training task has been submitted to Pueue. Task ID: {task_id}")
-            st.session_state["submitted_pueue_tasks"][task_id] = requests.get(
-                f"{API_URL}/pueue/running_status/{task_id}"
-            ).json()
+            try:
+                task_id = response_data["task_id"]
+                st.success(
+                    f"Training task has been submitted to Pueue. Task ID: {task_id}"
+                )
+                st.session_state["submitted_pueue_tasks"][task_id] = requests.get(
+                    f"{API_URL}/pueue/running_status/{task_id}"
+                ).json()
+            except:
+                st.error(response_data)
         else:
             st.error("Failed to submit the training task to Pueue.")
 

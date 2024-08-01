@@ -1,4 +1,4 @@
-from typing import Optional, Union
+from typing import Optional, Union, Literal
 import torch
 from pydantic import BaseModel
 import mlflow
@@ -17,6 +17,10 @@ class TrainTask(BaseModel):
     gpu_id: int = -1  # GPU ID to use, -1 for automatic allocation
     run_name: Optional[str] = None  # Optional run name for MLFlow
     exp_name: Optional[str] = None  # Optional experiment name for MLFlow
+    # NOTE: with `bool` you activate this as a flag like `--save_every_epoch`
+    save_every_epoch: bool = False  # Whether to save state_dict at every epoch
+    # NOTE: with `Literal[False, True]` you activate this as a flag like normal argument `--save_model True` or `--save_model False`
+    save_model: Literal[False, True] = True  # Whether to save model at the end
 
 
 class TrainArgs(Tap):
@@ -25,6 +29,8 @@ class TrainArgs(Tap):
     gpu_id: int = -1  # GPU ID to use, -1 for automatic allocation
     run_name: str = None  # Optional name for the MLFlow run
     exp_name: Optional[str] = None  # Optional experiment name for MLFlow
+    save_every_epoch: bool = False  # Whether to save state_dict at every epoch
+    save_model: Literal[False, True] = True  # Whether to save model at the end
 
 
 def get_args_from_model(param: TrainTask) -> TrainArgs:
@@ -110,15 +116,16 @@ def train_model(
                         # Log metrics
                         mlflow.log_metric("loss", loss.item(), step=epoch)
                         # All the information needed for resuming goes here
-                        mlflow.pytorch.log_state_dict(
-                            {
-                                "epoch": epoch,
-                                "model_state_dict": model.state_dict(),
-                                "optimizer_state_dict": optimizer.state_dict(),
-                            },
-                            # NOTE: this path is a "folder name"
-                            f"checkpoint/state_dict_epoch_{epoch}",
-                        )
+                        if task.save_every_epoch:
+                            mlflow.pytorch.log_state_dict(
+                                {
+                                    "epoch": epoch,
+                                    "model_state_dict": model.state_dict(),
+                                    "optimizer_state_dict": optimizer.state_dict(),
+                                },
+                                # NOTE: this path is a "folder name"
+                                f"checkpoint/state_dict_epoch_{epoch}",
+                            )
                         mlflow.pytorch.log_state_dict(
                             {
                                 "epoch": epoch,
@@ -128,7 +135,8 @@ def train_model(
                             # NOTE: this path is a "folder name"
                             f"checkpoint/latest",
                         )
-                    mlflow.pytorch.log_model(model, f"model/latest")
+                    if task.save_model:
+                        mlflow.pytorch.log_model(model, f"model/latest")
             except Exception as e:
                 logger.error(f"An error occurred: {e}")
                 mlflow.log_param("error", str(e))

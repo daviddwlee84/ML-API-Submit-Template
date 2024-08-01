@@ -1,4 +1,4 @@
-from typing import Union, Optional  # , Tuple
+from typing import Union, Optional
 import subprocess
 import os
 import sys
@@ -72,13 +72,21 @@ def pueue_submit(
     for key, value in parsed_args.as_dict().items():
         if value is None:
             continue
+
+        # Special case for boolean flag
+        if parsed_args._annotations[key] is bool:
+            if value is True:
+                args.append(f"--{key}")
+            continue
+
         args.append(f"--{key}")
         if (
             isinstance(value, list)
             or isinstance(value, tuple)
             or isinstance(value, set)
         ):
-            args.append(" ".join([str(item) for item in value]))
+            # args.append(" ".join([str(item) for item in value]))
+            args.extend([str(item) for item in value])
         else:
             args.append(str(value))
 
@@ -134,11 +142,15 @@ def pueue_logs(task_id: Optional[str] = None) -> dict:
 
 
 if __name__ == "__main__":
-    args = TrainArgs().parse_args()
+    args: TrainArgs = TrainArgs().parse_args()
     print(pueue_submit(args, dry_run=True))
     args.run_name = "Name with special [(character)]"
     args.exp_name = "Name with space"
     print(pueue_submit(args, "Non-Default Group", dry_run=True))
+    args.save_every_epoch = True
+    args.save_model = False
+    print(pueue_submit(args, "Non-Default Group", dry_run=True))
+    exit()
     # print(pueue_submit(args, "Non-Default Group"))
     print(pueue_status())
     print(pueue_logs())
