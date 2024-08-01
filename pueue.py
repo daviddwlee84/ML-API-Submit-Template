@@ -14,8 +14,9 @@ def pueue_set_parallel(
     pueue_group: Optional[str] = None, pueue_parallel: Optional[int] = 1
 ) -> None:
     if pueue_group:
+        # Don't check this since if a group exist it will return 1
         temp_return = subprocess.run(
-            ["pueue", "group", "add", pueue_group], capture_output=True, check=True
+            ["pueue", "group", "add", pueue_group], capture_output=True
         )
         logger.info(
             f"Create pueue group {pueue_group}: {temp_return.stdout.decode().strip()}"
@@ -90,7 +91,8 @@ def pueue_submit(
                 ")" in args[-1],
             ]
         ):
-            args[-1] = f"'\"{args[-1]}\"'"
+            # Since we pass args instead of command string, we can get rid of ""
+            args[-1] = f"'{args[-1]}'"
 
     command = r" ".join(args)
     logger.info(command)

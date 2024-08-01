@@ -1,6 +1,9 @@
 mlruns/
 db_data/
 minio_data/
+mlruns.db
+export_exps/
+*.deb
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
