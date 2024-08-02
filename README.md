@@ -79,6 +79,11 @@ MLFLOW_TRACKING_URI=sqlite:///mlruns.db python cli.py
 mlflow ui --port 8080 --backend-store-uri sqlite:///mlruns.db
 ```
 
+### Local WebUI x Pueue
+
+```bash
+streamlit run ui_local_pueue.py
+```
 
 ## Additional Setup
 

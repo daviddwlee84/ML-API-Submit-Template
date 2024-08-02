@@ -1,4 +1,4 @@
-from typing import Union, Optional
+from typing import Union, Optional, Literal, Dict
 import subprocess
 import os
 import sys
@@ -48,6 +48,7 @@ def pueue_submit(
     dir_path: str = curr_dir,
     pueue_return_task_id_only: bool = False,
     dry_run: bool = False,
+    extra_submit_env: Optional[Dict[str, str]] = None,
 ) -> str:  # Tuple[str, str]:
     args = ["pueue", "add"]
 
@@ -108,9 +109,21 @@ def pueue_submit(
     if dry_run:
         return command  # , ""
 
+    # Expand OS environment to extra_submit_env, since subprocess will default use it when `env` is not set
+    # NOTE: we must have OS environment otherwise it won't be able to find the pueue executable
+    if extra_submit_env is not None:
+        for key, value in os.environ.items():
+            if key not in extra_submit_env:
+                extra_submit_env[key] = value
+
     # https://docs.python.org/3/library/subprocess.html#subprocess.run
     result = subprocess.run(
-        args, cwd=dir_path, capture_output=True, text=True, check=True
+        args,
+        cwd=dir_path,
+        capture_output=True,
+        text=True,
+        check=True,
+        env=extra_submit_env,
     )
     return result.stdout.strip()  # , result.stderr
 
@@ -139,6 +152,49 @@ def pueue_logs(task_id: Optional[str] = None) -> dict:
             ["pueue", "log", "--json"], stdout=subprocess.PIPE, check=True
         ).stdout.decode()
     )
+
+
+def get_pueue_task_status(
+    mode: Literal["status", "logs", "running_status", "output"],
+    task_id: Optional[str] = None,
+):
+    """
+    Basically the same as api.py one
+    NOTE: Won't have stats when the task has not run (e.g. Queued)
+    """
+    if mode == "status":
+        return pueue_status(task_id=task_id)
+    elif mode == "logs":
+        return pueue_logs(task_id=task_id)
+    elif mode == "running_status":
+        try:
+            assert task_id
+            status = pueue_logs(task_id=task_id)["task"]["status"]
+            if isinstance(status, dict):
+                # {'detail': 'Not Found'}
+                return "Success" if "Done" in status else status
+            elif isinstance(status, str):
+                return status
+            else:
+                raise ValueError(f"Unknown status {status}")
+        except:
+            raise ValueError(
+                "In running_status mode you should query for an existing task_id"
+            )
+    elif mode == "output":
+        try:
+            assert task_id
+            log = pueue_logs(task_id=task_id)
+            return dict(
+                output=log["output"],
+                is_finished="Done" in log["task"]["status"],
+            )
+        except:
+            raise ValueError(
+                "In output mode you should query for an existing task_id",
+            )
+    else:
+        raise NotImplementedError(f"Unknown mode {mode}")
 
 
 if __name__ == "__main__":

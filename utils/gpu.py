@@ -57,8 +57,13 @@ class TorchDeviceManager:
         else:
             raise NotImplementedError(f"Invalid Mode {mode}")
 
-    def get_gpu_number(self, mode: Literal["torch", "gputils"] = "torch") -> int:
-        return len(GPUtil.getGPUs()) if self.is_gpu_available(mode=mode) else 0
+    @staticmethod
+    def get_gpu_number(mode: Literal["torch", "gputils"] = "torch", default: int = 0) -> int:
+        return (
+            len(GPUtil.getGPUs())
+            if TorchDeviceManager.is_gpu_available(mode=mode)
+            else default
+        )
 
     def _get_available_gpu(self) -> Optional[Tuple[int, FileLock]]:
         if not self.is_gpu_available():
